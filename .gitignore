@@ -1,0 +1,17 @@
+# Backend
+accounting-backend/.env
+accounting-backend/__pycache__/
+accounting-backend/*.pyc
+accounting-backend/.pytest_cache/
+
+# Frontend
+accounting-frontend/node_modules/
+accounting-frontend/dist/
+accounting-frontend/.env.local
+accounting-frontend/.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
