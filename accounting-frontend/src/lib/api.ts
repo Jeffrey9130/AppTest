@@ -39,6 +39,10 @@ class ApiClient {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          this.clearToken();
+          window.location.href = '/login';
+        }
         const errorData = await response.json().catch(() => ({ detail: 'Request failed' }));
         return { error: errorData.detail || 'Request failed' };
       }
@@ -202,28 +206,78 @@ export async function getYearlyStats(year: number) {
   return api.get<YearlyStats>(`/api/stats/yearly?year=${year}`);
 }
 
-export function downloadCSV(filters?: { start_date?: string; end_date?: string }) {
+export async function downloadCSV(filters?: { start_date?: string; end_date?: string }) {
   const params = new URLSearchParams();
   if (filters?.start_date) params.append('start_date', filters.start_date);
   if (filters?.end_date) params.append('end_date', filters.end_date);
   
   const query = params.toString();
-  window.open(
-    `${API_URL}/api/export/csv${query ? `?${query}` : ''}`,
-    '_blank'
-  );
+  const token = localStorage.getItem('token');
+  
+  try {
+    const response = await fetch(
+      `${API_URL}/api/export/csv${query ? `?${query}` : ''}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to download CSV');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('CSV download failed:', error);
+    alert('Failed to download CSV. Please try again.');
+  }
 }
 
-export function downloadPDF(filters?: { start_date?: string; end_date?: string }) {
+export async function downloadPDF(filters?: { start_date?: string; end_date?: string }) {
   const params = new URLSearchParams();
   if (filters?.start_date) params.append('start_date', filters.start_date);
   if (filters?.end_date) params.append('end_date', filters.end_date);
   
   const query = params.toString();
-  window.open(
-    `${API_URL}/api/export/pdf${query ? `?${query}` : ''}`,
-    '_blank'
-  );
+  const token = localStorage.getItem('token');
+  
+  try {
+    const response = await fetch(
+      `${API_URL}/api/export/pdf${query ? `?${query}` : ''}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to download PDF');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `expenses_${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('PDF download failed:', error);
+    alert('Failed to download PDF. Please try again.');
+  }
 }
 
 export function logout() {
